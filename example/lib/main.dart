@@ -2,15 +2,10 @@ import 'package:flutter/material.dart';
 import 'dart:async';
 import 'package:fast_qr_reader_view/fast_qr_reader_view.dart';
 
-List<CameraDescription> cameras;
 
 Future<Null> main() async {
   // Fetch the available cameras before initializing the app.
-  try {
-    cameras = await availableCameras();
-  } on QRReaderException catch (e) {
-    logError(e.code, e.description);
-  }
+  WidgetsFlutterBinding.ensureInitialized();
   runApp(new MyApp());
 }
 
@@ -23,9 +18,12 @@ class MyApp extends StatefulWidget {
 }
 
 class _MyAppState extends State<MyApp> with SingleTickerProviderStateMixin {
-  QRReaderController controller;
+
   final GlobalKey<ScaffoldState> _scaffoldKey = new GlobalKey<ScaffoldState>();
   AnimationController animationController;
+
+  List<CameraDescription> cameras;
+  QRReaderController controller;
 
   @override
   void initState() {
@@ -51,7 +49,7 @@ class _MyAppState extends State<MyApp> with SingleTickerProviderStateMixin {
       });
 
     // pick the first available camera
-    onNewCameraSelected(cameras[0]);
+    _awaitCameras();
   }
 
   Animation<double> verticalPosition;
@@ -128,7 +126,7 @@ class _MyAppState extends State<MyApp> with SingleTickerProviderStateMixin {
     }
   }
 
-  void onCodeRead(dynamic value) {
+  void onCodeRead(dynamic value) async {
     showInSnackBar(value.toString());
     // ... do something
     // wait 5 seconds then start scanning again.
@@ -139,8 +137,8 @@ class _MyAppState extends State<MyApp> with SingleTickerProviderStateMixin {
     if (controller != null) {
       await controller.dispose();
     }
-    controller = new QRReaderController(cameraDescription, ResolutionPreset.low,
-        [CodeFormat.qr, CodeFormat.pdf417], onCodeRead);
+    controller = new QRReaderController(cameraDescription, ResolutionPreset.high,
+        [CodeFormat.qr], onCodeRead);
 
     // If the controller is updated then update the UI.
     controller.addListener(() {
@@ -166,5 +164,31 @@ class _MyAppState extends State<MyApp> with SingleTickerProviderStateMixin {
   void showInSnackBar(String message) {
     _scaffoldKey.currentState
         .showSnackBar(new SnackBar(content: new Text(message)));
+  }
+
+
+  void _awaitCameras() async {
+    //Map<PermissionGroup, PermissionStatus> permissions = await PermissionHandler().requestPermissions([PermissionGroup.camera]);
+    if (controller != null) {
+      await controller.dispose();
+    }
+
+    //if (permissions.)
+    cameras = await availableCameras();
+    print('got ${cameras.length} cameras');
+    controller = QRReaderController(
+        cameras[0], ResolutionPreset.high, [CodeFormat.qr], onCodeRead);
+
+    try {
+      await controller.initialize();
+    } on QRReaderException catch (e) {
+      logError(e.code, e.description);
+      showInSnackBar('Error: ${e.code}\n${e.description}');
+    }
+
+    if (mounted) {
+      setState(() {});
+      controller.startScanning();
+    }
   }
 }
