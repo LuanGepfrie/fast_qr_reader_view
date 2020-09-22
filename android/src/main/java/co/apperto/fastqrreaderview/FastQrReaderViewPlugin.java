@@ -50,6 +50,7 @@ import io.flutter.plugin.common.MethodChannel.Result;
 import io.flutter.plugin.common.PluginRegistry;
 import io.flutter.plugin.common.PluginRegistry.Registrar;
 import io.flutter.view.FlutterView;
+import io.flutter.view.TextureRegistry;
 
 /**
  * FastQrReaderViewPlugin
@@ -70,7 +71,7 @@ public class FastQrReaderViewPlugin implements MethodCallHandler, PluginRegistry
             };
 
     private static CameraManager cameraManager;
-    private final FlutterView view;
+    private final TextureRegistry view;
     private QrReader camera;
     private Activity activity;
     private Registrar registrar;
@@ -86,7 +87,7 @@ public class FastQrReaderViewPlugin implements MethodCallHandler, PluginRegistry
 //    private final AtomicBoolean shouldThrottle = new AtomicBoolean(false);
 
 
-    private FastQrReaderViewPlugin(Registrar registrar, FlutterView view, Activity activity) {
+    private FastQrReaderViewPlugin(Registrar registrar, TextureRegistry view, Activity activity) {
 
         this.registrar = registrar;
         this.view = view;
@@ -159,15 +160,13 @@ public class FastQrReaderViewPlugin implements MethodCallHandler, PluginRegistry
      * Plugin registration.
      */
     public static void registerWith(Registrar registrar) {
-        channel =
-                new MethodChannel(registrar.messenger(), "fast_qr_reader_view");
+        channel = new MethodChannel(registrar.messenger(), "fast_qr_reader_view");
 
         cameraManager = (CameraManager) registrar.activity().getSystemService(Context.CAMERA_SERVICE);
 
-        channel.setMethodCallHandler(
-                new FastQrReaderViewPlugin(registrar, registrar.view(), registrar.activity()));
+        channel.setMethodCallHandler(new FastQrReaderViewPlugin(registrar, registrar.textures(), registrar.activity()));
 
-        FastQrReaderViewPlugin plugin = new FastQrReaderViewPlugin(registrar, registrar.view(), registrar.activity());
+        FastQrReaderViewPlugin plugin = new FastQrReaderViewPlugin(registrar, registrar.textures(), registrar.activity());
         channel.setMethodCallHandler(plugin);
         registrar.addRequestPermissionsResultListener(plugin);
     }
